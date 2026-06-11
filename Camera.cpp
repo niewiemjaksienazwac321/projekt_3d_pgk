@@ -1,3 +1,8 @@
+/**
+* @file Camera.cpp
+ * @brief Implementacja logiki pozycjonowania i obrotów kamery.
+ */
+
 #include "Camera.h"
 #include <cmath>
 
@@ -14,16 +19,13 @@ void Camera::processMouseMovement(float xoffset, float yoffset) {
     yaw += xoffset * sensitivity;
     pitch += yoffset * sensitivity;
 
-    // Ograniczenia rotacji góra/dół
-    if (pitch > 85.0f) pitch = 85.0f;  // Widok z lotu ptaka (z góry)
-    if (pitch < -15.0f) pitch = -15.0f; // NAPRAWIONE: Pozwala opuścić kamerę na poziom ziemi i patrzeć lekko w górę
+    if (pitch > 85.0f) pitch = 85.0f;
+    if (pitch < -15.0f) pitch = -15.0f;
 }
 
 void Camera::updateTPP(float playerX, float playerY, float playerZ) {
-    // Punkt celowania (środek postaci gracza)
     target = glm::vec3(playerX, playerY + 1.0f, playerZ);
 
-    // Pozycja kamery wokół punktu docelowego
     position.x = playerX + distance * std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
     position.y = playerY + 1.0f + distance * std::sin(glm::radians(pitch));
     position.z = playerZ + distance * std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));

@@ -1,3 +1,8 @@
+/**
+ * @file Engine.cpp
+ * @brief Implementacja metod klasy Engine oraz obsługi stanów gry i menu interaktywnego.
+ */
+
 #include "Engine.h"
 #include "Camera.h"
 #include "Player.h"
@@ -11,13 +16,13 @@ Engine* Engine::instance = nullptr;
 Engine::Engine() {
     windowWidth = 1280;
     windowHeight = 720;
-    fps = 60;
+    fps = 60; ///< Domyślna wartość płynności renderowania
     isPerspective = true;
     isPaused = false;
 
     isLightingEnabled = true;
     areShadowsEnabled = true;
-    isSmoothShading = true; // Domyślnie gładkie cieniowanie
+    isSmoothShading = true;
 
     for (int i = 0; i < 256; i++) {
         keyStates[i] = false;
@@ -49,7 +54,7 @@ void Engine::init(int* argc, char** argv) {
 
     camera = new Camera(glm::vec3(0.0f, 1.0f, 0.0f));
 
-    // Użycie nowej klasy BitmapHandler
+    // Ładowanie tekstur z plików BMP/PNG
     GLuint texGrass  = BitmapHandler::loadTexture("trawa.png");
     GLuint texPFront = BitmapHandler::loadTexture("gracz_przod.png");
     GLuint texPBack  = BitmapHandler::loadTexture("gracz_tyl.png");
@@ -280,8 +285,11 @@ void Engine::render() {
         renderText(windowWidth / 2.0f - 180.0f, windowHeight - 350.0f, isSmoothShading ? "[3] PATH TREJSING -> ON" : "[3] PATH TREJSING -> OFF");
         renderText(windowWidth / 2.0f - 180.0f, windowHeight - 400.0f, isPerspective ? "[4] Rzutowanie -> PERSPEKTYWA" : "[4] Rzutowanie -> ORTOGONALNE");
 
+        // NOWA OPCJA UI: dynamiczne wyświetlanie klatek z oznaczeniem trybu kinowego
+        renderText(windowWidth / 2.0f - 180.0f, windowHeight - 450.0f, "[5] Limit FPS -> " + std::to_string(fps) + (fps == 15 ? " (Tryb Konsolowy)" : ""));
+
         glColor3f(0.8f, 0.8f, 0.8f);
-        renderText(windowWidth / 2.0f - 130.0f, windowHeight - 500.0f, "Nacisnij 'P', aby wznowic gre");
+        renderText(windowWidth / 2.0f - 130.0f, windowHeight - 520.0f, "Nacisnij 'P', aby wznowic gre");
 
         glEnable(GL_DEPTH_TEST);
 
@@ -298,6 +306,8 @@ void Engine::update(int value) {
     processMovement();
     if (player) player->updatePhysics(getFloorLevelAt(player->posX, player->posZ));
     glutPostRedisplay();
+
+    // Elastyczne wywołanie pętli czasowej na podstawie zmiennej fps
     glutTimerFunc(1000 / fps, timerWrapper, 0);
 }
 
@@ -314,6 +324,15 @@ void Engine::handleKeyDown(unsigned char key, int x, int y) {
         if (key == '4') {
             isPerspective = !isPerspective;
             reshape(windowWidth, windowHeight);
+            glutPostRedisplay();
+            return;
+        }
+        // NOWOŚĆ: Przełączanie wartości FPS (30 -> 60 -> 144 -> 15 -> powrót do 30)
+        if (key == '5') {
+            if (fps == 30) fps = 60;
+            else if (fps == 60) fps = 144;
+            else if (fps == 144) fps = 15;
+            else fps = 30;
             glutPostRedisplay();
             return;
         }
