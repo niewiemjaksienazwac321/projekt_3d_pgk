@@ -1,3 +1,8 @@
+/**
+ * @file GeometryProvider.cpp
+ * @brief Definicje struktur tablic wierzchołków i implementacja renderowania brył.
+ */
+
 #include "GeometryProvider.h"
 #include <cmath>
 
@@ -45,19 +50,12 @@ void TriangleObject::draw(bool isShadow) {
 
 void CubeObject::draw(bool isShadow) {
     if (textureId == 0) {
-        // --- SZEŚCIAN INDEKSOWANY ---
         const float vertices[] = {
-            // Przód
             -0.5f, -0.5f,  0.5f,   0.5f, -0.5f,  0.5f,   0.5f,  0.5f,  0.5f,  -0.5f,  0.5f,  0.5f,
-            // Tył
             -0.5f, -0.5f, -0.5f,  -0.5f,  0.5f, -0.5f,   0.5f,  0.5f, -0.5f,   0.5f, -0.5f, -0.5f,
-            // Góra
             -0.5f,  0.5f, -0.5f,  -0.5f,  0.5f,  0.5f,   0.5f,  0.5f,  0.5f,   0.5f,  0.5f, -0.5f,
-            // Dół
             -0.5f, -0.5f, -0.5f,   0.5f, -0.5f, -0.5f,   0.5f, -0.5f,  0.5f,  -0.5f, -0.5f,  0.5f,
-            // Prawo
              0.5f, -0.5f, -0.5f,   0.5f,  0.5f, -0.5f,   0.5f,  0.5f,  0.5f,   0.5f, -0.5f,  0.5f,
-            // Lewo
             -0.5f, -0.5f, -0.5f,  -0.5f, -0.5f,  0.5f,  -0.5f,  0.5f,  0.5f,  -0.5f,  0.5f, -0.5f
         };
 
@@ -80,12 +78,12 @@ void CubeObject::draw(bool isShadow) {
         };
 
         const unsigned char indices[] = {
-             0, 1, 2,   0, 2, 3,  // Przód
-             4, 5, 6,   4, 6, 7,  // Tył
-             8, 9, 10,  8, 10,11, // Góra
-            12,13,14,  12,14,15,  // Dół
-            16,17,18,  16,18,19,  // Prawo
-            20,21,22,  20,22,23   // Lewo
+             0, 1, 2,   0, 2, 3,
+             4, 5, 6,   4, 6, 7,
+             8, 9, 10,  8, 10,11,
+            12,13,14,  12,14,15,
+            16,17,18,  16,18,19,
+            20,21,22,  20,22,23
         };
 
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -105,12 +103,10 @@ void CubeObject::draw(bool isShadow) {
         }
 
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, indices);
-
         glDisableClientState(GL_VERTEX_ARRAY);
         if (!isShadow) { glDisableClientState(GL_COLOR_ARRAY); glDisableClientState(GL_NORMAL_ARRAY); }
 
     } else {
-        // --- OTEKSTUROWANY GRACZ (Pozostaje zoptymalizowany pod unikalne tekstury) ---
         if (!isShadow) {
             GLfloat mat_specular[] = { 0.8f, 0.8f, 0.8f, 1.0f };
             glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
@@ -214,9 +210,7 @@ void PyramidObject::draw(bool isShadow) {
 }
 
 SphereObject::SphereObject(float x, float y, float z) : Object3D(x, y, z) {
-    int sectors = 24;
-    int stacks = 24;
-    float radius = 0.5f;
+    int sectors = 24; int stacks = 24; float radius = 0.5f;
 
     for (int i = 0; i < stacks; ++i) {
         float phi1 = M_PI * (float)i / stacks;
@@ -264,11 +258,8 @@ void SphereObject::draw(bool isShadow) {
 }
 
 ConeObject::ConeObject(float x, float y, float z) : Object3D(x, y, z) {
-    int sectors = 24;
-    float radius = 0.5f;
-    float height = 1.0f;
+    int sectors = 24; float radius = 0.5f; float height = 1.0f;
 
-    // Generowanie podstawy (dół)
     for (int j = 0; j < sectors; ++j) {
         float theta1 = 2.0f * M_PI * (float)j / sectors;
         float theta2 = 2.0f * M_PI * (float)(j + 1) / sectors;
@@ -276,10 +267,7 @@ ConeObject::ConeObject(float x, float y, float z) : Object3D(x, y, z) {
         vertices.insert(vertices.end(), { 0.0f, 0.0f, 0.0f, radius * cos(theta2), 0.0f, radius * sin(theta2), radius * cos(theta1), 0.0f, radius * sin(theta1) });
         normals.insert(normals.end(), { 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f });
 
-        // Ściany boczne
-        float nx = cos((theta1 + theta2) / 2.0f);
-        float ny = radius / height;
-        float nz = sin((theta1 + theta2) / 2.0f);
+        float nx = cos((theta1 + theta2) / 2.0f); float ny = radius / height; float nz = sin((theta1 + theta2) / 2.0f);
         float len = sqrt(nx*nx + ny*ny + nz*nz);
         nx /= len; ny /= len; nz /= len;
 
@@ -325,8 +313,6 @@ void FloorObject::draw(bool isShadow) {
 
     for (int i = -10; i < 10; i++) {
         for (int j = -10; j < 10; j++) {
-            // ZMIANA: Każdy kwadrat 1x1 otrzymuje teraz pełny zakres tekstury (od 0 do 1).
-            // Spowoduje to, że tekstura trawy będzie znacznie mniejsza i powtórzy się dokładnie 20x20 razy.
             glTexCoord2f(0.0f, 0.0f); glVertex3f((float)i,   0.0f, (float)j);
             glTexCoord2f(1.0f, 0.0f); glVertex3f((float)i+1, 0.0f, (float)j);
             glTexCoord2f(1.0f, 1.0f); glVertex3f((float)i+1, 0.0f, (float)j+1);
@@ -337,6 +323,4 @@ void FloorObject::draw(bool isShadow) {
     glDisable(GL_TEXTURE_2D);
 }
 
-std::vector<Object3D*> GeometryProvider::initScene() {
-    return std::vector<Object3D*>();
-}
+std::vector<Object3D*> GeometryProvider::initScene() { return std::vector<Object3D*>(); }

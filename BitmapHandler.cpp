@@ -1,3 +1,8 @@
+/**
+* @file BitmapHandler.cpp
+ * @brief Integracja ładowacza stb_image i generowania deskryptorów OpenGL.
+ */
+
 #include "BitmapHandler.h"
 #include <iostream>
 
