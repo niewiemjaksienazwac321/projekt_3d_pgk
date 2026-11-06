@@ -16,7 +16,7 @@ Engine* Engine::instance = nullptr;
 Engine::Engine() {
     windowWidth = 1280;
     windowHeight = 720;
-    fps = 60; ///< Domyślna wartość płynności renderowania
+    fps = 60;
     isPerspective = true;
     isPaused = false;
 
@@ -54,20 +54,23 @@ void Engine::init(int* argc, char** argv) {
 
     camera = new Camera(glm::vec3(0.0f, 1.0f, 0.0f));
 
-    // Ładowanie tekstur z plików BMP/PNG
-    GLuint texGrass  = BitmapHandler::loadTexture("trawa.png");
-    GLuint texPFront = BitmapHandler::loadTexture("gracz_przod.png");
-    GLuint texPBack  = BitmapHandler::loadTexture("gracz_tyl.png");
-    GLuint texPLeft  = BitmapHandler::loadTexture("gracz_lewo.png");
-    GLuint texPRight = BitmapHandler::loadTexture("gracz_prawo.png");
-    GLuint texPTop   = BitmapHandler::loadTexture("gracz_gora.png");
+    // --- Ładowanie tekstur w formacie .png ---
+    GLuint texGrass    = BitmapHandler::loadTexture("trawa.png");
+    GLuint texNoga     = BitmapHandler::loadTexture("noga.png");
+    GLuint texReka     = BitmapHandler::loadTexture("reka.png");
+    GLuint texLawa     = BitmapHandler::loadTexture("lawa.png");
+    GLuint texGlowaF   = BitmapHandler::loadTexture("glowa_przod.png");
+    GLuint texGlowaT   = BitmapHandler::loadTexture("glowa_tyl.png");
+    GLuint texLod      = BitmapHandler::loadTexture("lod.png");
 
     FloorObject* floor = new FloorObject();
     floor->textureId = texGrass;
     sceneObjects.push_back(floor);
 
+    // --- Inicjalizacja gracza z teksturami kończyn, tułowia i głowy ---
     player = new Player(0.0f, 0.0f, 0.0f);
-    player->setTextures(texPFront, texPBack, texPLeft, texPRight, texPTop);
+    player->setTextures(texNoga, texReka, texGrass, texGrass, texGrass, texGrass, texGrass, texGlowaF, texGlowaT);
+    player->head.textureId = texGlowaF; // Przypisanie tekstury glowa_przod.png do głowy
     sceneObjects.push_back(player);
 
     CubeObject* box1 = new CubeObject(-2.0f, 0.5f, -2.0f);
@@ -90,8 +93,50 @@ void Engine::init(int* argc, char** argv) {
 
     TriangleObject* triangle = new TriangleObject(0.0f, 1.0f, -4.0f);
     sceneObjects.push_back(triangle);
-}
 
+    // --- Płaska platforma z lodu (lod.png) ---
+    IcePlatformObject* icePlat = new IcePlatformObject(0.0f, 0.5f, 4.0f);
+    icePlat->scaleX = 3.0f; icePlat->scaleY = 0.3f; icePlat->scaleZ = 3.0f;
+    icePlat->textureId = texLod;
+    sceneObjects.push_back(icePlat);
+
+    // --- Pochyła rampa z lodu (lod.png) ---
+    IceSlopeObject* iceSlope = new IceSlopeObject(4.0f, 0.0f, 0.0f);
+    iceSlope->scaleX = 2.5f; iceSlope->scaleY = 2.0f; iceSlope->scaleZ = 3.0f;
+    iceSlope->textureId = texLod;
+    sceneObjects.push_back(iceSlope);
+
+    // --- Fragment gry: Basen z lawą (lawa.png) ---
+    LavaObject* lavaPool = new LavaObject(0.0f, -0.05f, -8.0f);
+    lavaPool->scaleX = 6.0f; lavaPool->scaleY = 0.2f; lavaPool->scaleZ = 4.0f;
+    lavaPool->textureId = texLawa;
+    sceneObjects.push_back(lavaPool);
+
+    // --- Ruchoma platforma pionowa (góra-dół) ---
+    MovingPlatformObject* movPlatformV = new MovingPlatformObject(
+        glm::vec3(3.0f, 0.5f, -2.0f),
+        glm::vec3(3.0f, 3.5f, -2.0f),
+        0.015f
+    );
+    movPlatformV->scaleX = 2.0f; movPlatformV->scaleY = 0.3f; movPlatformV->scaleZ = 2.0f;
+    movPlatformV->textureId = texGrass;
+    sceneObjects.push_back(movPlatformV);
+
+    // --- Ruchoma platforma pozioma (lewo-prawo) ---
+    MovingPlatformObject* movPlatformH = new MovingPlatformObject(
+        glm::vec3(-4.0f, 1.0f, 2.0f),
+        glm::vec3(1.0f, 1.0f, 2.0f),
+        0.015f
+    );
+    movPlatformH->scaleX = 2.0f; movPlatformH->scaleY = 0.3f; movPlatformH->scaleZ = 2.0f;
+    movPlatformH->textureId = texGrass;
+    sceneObjects.push_back(movPlatformH);
+
+    // --- Platforma pochyła (Rampa zwykła) ---
+    SlopePlatformObject* slope = new SlopePlatformObject(-4.0f, 0.0f, -2.0f);
+    slope->scaleX = 2.0f; slope->scaleY = 2.0f; slope->scaleZ = 3.0f;
+    sceneObjects.push_back(slope);
+}
 void Engine::start() { glutMainLoop(); }
 
 void Engine::renderText(float x, float y, const std::string& text) {
@@ -115,11 +160,18 @@ bool Engine::checkCollision3D(float px, float py, float pz, float sx, float sy, 
     float pMinZ = pz - sz / 2.0f; float pMaxZ = pz + sz / 2.0f;
 
     for (auto* obj : sceneObjects) {
-        if (obj == ignoreObj || dynamic_cast<FloorObject*>(obj) != nullptr) continue;
+        // Ignorujemy podłogę oraz platformy pochyłe
+        if (obj == ignoreObj || dynamic_cast<FloorObject*>(obj) != nullptr ||
+            dynamic_cast<SlopePlatformObject*>(obj) != nullptr) continue;
 
         float oMinX = obj->posX - obj->scaleX / 2.0f; float oMaxX = obj->posX + obj->scaleX / 2.0f;
         float oMinY = obj->posY - obj->scaleY / 2.0f; float oMaxY = obj->posY + obj->scaleY / 2.0f;
         float oMinZ = obj->posZ - obj->scaleZ / 2.0f; float oMaxZ = obj->posZ + obj->scaleZ / 2.0f;
+
+        // Jeśli gracz stoi na górze obiektu, nie blokujemy ruchu poziomego
+        if (pMinY >= oMaxY - 0.1f) {
+            continue;
+        }
 
         if (pMaxX > oMinX && pMinX < oMaxX && pMaxY > oMinY && pMinY < oMaxY && pMaxZ > oMinZ && pMinZ < oMaxZ) {
             return true;
@@ -128,60 +180,163 @@ bool Engine::checkCollision3D(float px, float py, float pz, float sx, float sy, 
     return false;
 }
 
-float Engine::getFloorLevelAt(float x, float z) {
+SurfaceInfo Engine::getSurfaceInfoAt(float x, float z) {
+    SurfaceInfo info;
     float highestFloor = 0.0f;
     float pRadius = player->scaleX / 2.0f;
+    float playerBottom = player->posY - (player->scaleY / 2.0f); // Poziom stóp gracza
 
     for (auto* obj : sceneObjects) {
         if (obj == player || dynamic_cast<FloorObject*>(obj) != nullptr) continue;
 
+        // Lodowa rampa pochyła
+        IceSlopeObject* iceSlope = dynamic_cast<IceSlopeObject*>(obj);
+        if (iceSlope != nullptr) {
+            float localX = x - iceSlope->posX;
+            float localZ = z - iceSlope->posZ;
+            float minX = -iceSlope->scaleX / 2.0f; float maxX = iceSlope->scaleX / 2.0f;
+            float minZ = -iceSlope->scaleZ / 2.0f; float maxZ = iceSlope->scaleZ / 2.0f;
+
+            if (localX + pRadius > minX && localX - pRadius < maxX && localZ + pRadius > minZ && localZ - pRadius < maxZ) {
+                float normalizedLocalZ = localZ / iceSlope->scaleZ;
+                float roofY = iceSlope->posY + (normalizedLocalZ + 0.5f) * iceSlope->scaleY;
+
+                if (player->posY >= roofY - 0.3f && roofY >= highestFloor) {
+                    highestFloor = roofY;
+                    info.floorY = roofY;
+
+                    // Efekt lodu działa TYLKO wtedy, gdy stopy gracza są faktycznie na powierzchni rampy
+                    if (std::abs(playerBottom - roofY) < 0.35f) {
+                        info.isIce = true;
+                        info.isIceSlope = true;
+                    } else {
+                        info.isIce = false;
+                        info.isIceSlope = false;
+                    }
+                }
+            }
+            continue;
+        }
+
+        // Płaska platforma z lodu
+        IcePlatformObject* icePlat = dynamic_cast<IcePlatformObject*>(obj);
+        if (icePlat != nullptr) {
+            float oMinX = icePlat->posX - icePlat->scaleX / 2.0f; float oMaxX = icePlat->posX + icePlat->scaleX / 2.0f;
+            float oMinZ = icePlat->posZ - icePlat->scaleZ / 2.0f; float oMaxZ = icePlat->posZ + icePlat->scaleZ / 2.0f;
+
+            if (x + pRadius > oMinX && x - pRadius < oMaxX && z + pRadius > oMinZ && z - pRadius < oMaxZ) {
+                float roofY = icePlat->posY + (icePlat->scaleY / 2.0f);
+                if (player->posY >= roofY - 0.2f && roofY >= highestFloor) {
+                    highestFloor = roofY;
+                    info.floorY = roofY;
+
+                    if (std::abs(playerBottom - roofY) < 0.35f) {
+                        info.isIce = true;
+                        info.isIceSlope = false;
+                    } else {
+                        info.isIce = false;
+                        info.isIceSlope = false;
+                    }
+                }
+            }
+            continue;
+        }
+
+        // Zwykła rampa pochyła
+        SlopePlatformObject* slope = dynamic_cast<SlopePlatformObject*>(obj);
+        if (slope != nullptr) {
+            float localX = x - slope->posX;
+            float localZ = z - slope->posZ;
+            float minX = -slope->scaleX / 2.0f; float maxX = slope->scaleX / 2.0f;
+            float minZ = -slope->scaleZ / 2.0f; float maxZ = slope->scaleZ / 2.0f;
+
+            if (localX + pRadius > minX && localX - pRadius < maxX && localZ + pRadius > minZ && localZ - pRadius < maxZ) {
+                float normalizedLocalZ = localZ / slope->scaleZ;
+                float roofY = slope->posY + (normalizedLocalZ + 0.5f) * slope->scaleY;
+                if (player->posY >= roofY - 0.3f && roofY >= highestFloor) {
+                    highestFloor = roofY;
+                    info.floorY = roofY;
+                    info.isIce = false;
+                    info.isIceSlope = false;
+                }
+            }
+            continue;
+        }
+
+        // Standardowe sześciany / platformy
         float oMinX = obj->posX - obj->scaleX / 2.0f; float oMaxX = obj->posX + obj->scaleX / 2.0f;
         float oMinZ = obj->posZ - obj->scaleZ / 2.0f; float oMaxZ = obj->posZ + obj->scaleZ / 2.0f;
 
         if (x + pRadius > oMinX && x - pRadius < oMaxX && z + pRadius > oMinZ && z - pRadius < oMaxZ) {
             float roofY = obj->posY + (obj->scaleY / 2.0f);
-            if (player->posY >= roofY - 0.2f) {
-                if (roofY > highestFloor) highestFloor = roofY;
+            if (player->posY >= roofY - 0.2f && roofY >= highestFloor) {
+                highestFloor = roofY;
+                info.floorY = roofY;
+                info.isIce = false;
+                info.isIceSlope = false;
             }
         }
     }
-    return highestFloor;
+    return info;
+}
+
+float Engine::getFloorLevelAt(float x, float z) {
+    return getSurfaceInfoAt(x, z).floorY;
 }
 
 void Engine::processMovement() {
     if (isPaused || !player || !camera) return;
 
-    float speed = 0.12f;
     float radYaw = glm::radians(camera->yaw);
-
     glm::vec3 camForward = glm::normalize(glm::vec3(cos(radYaw), 0.0f, sin(radYaw)));
     glm::vec3 camRight = glm::normalize(glm::cross(camForward, glm::vec3(0.0f, 1.0f, 0.0f)));
 
     float moveX = 0.0f, moveZ = 0.0f;
+    bool isMoving = false;
 
-    if (keyStates['w'] || keyStates['W']) { moveX -= camForward.x; moveZ -= camForward.z; }
-    if (keyStates['s'] || keyStates['S']) { moveX += camForward.x; moveZ += camForward.z; }
-    if (keyStates['a'] || keyStates['A']) { moveX += camRight.x;  moveZ += camRight.z; }
-    if (keyStates['d'] || keyStates['D']) { moveX -= camRight.x;  moveZ -= camRight.z; }
+    if (keyStates['w'] || keyStates['W']) { moveX -= camForward.x; moveZ -= camForward.z; isMoving = true; }
+    if (keyStates['s'] || keyStates['S']) { moveX += camForward.x; moveZ += camForward.z; isMoving = true; }
+    if (keyStates['a'] || keyStates['A']) { moveX += camRight.x;  moveZ += camRight.z; isMoving = true; }
+    if (keyStates['d'] || keyStates['D']) { moveX -= camRight.x;  moveZ -= camRight.z; isMoving = true; }
 
-    if (moveX != 0.0f || moveZ != 0.0f) {
-        glm::vec3 moveDir = glm::normalize(glm::vec3(moveX, 0.0f, moveZ)) * speed;
-        player->rotY = glm::degrees(std::atan2(moveDir.x, moveDir.z));
+    glm::vec3 inputDir(0.0f);
+    if (isMoving) {
+        inputDir = glm::normalize(glm::vec3(moveX, 0.0f, moveZ));
+    }
 
-        float nextX = player->posX + moveDir.x;
-        float nextZ = player->posZ + moveDir.z;
-        float boundary = 10.0f - (player->scaleX * 0.5f);
+    SurfaceInfo surf = getSurfaceInfoAt(player->posX, player->posZ);
+    player->updateMovementPhysics(isMoving, inputDir, surf.isIce, surf.isIceSlope);
 
-        if (nextX > -boundary && nextX < boundary) {
-            if (!checkCollision3D(nextX, player->posY, player->posZ, player->scaleX, player->scaleY, player->scaleZ, player)) {
-                player->posX = nextX;
-            }
+    // Wywołanie bez niepotrzebnych flag
+    player->updateAnimation();
+    glm::vec3 activeVel = (glm::length(player->hVelocity) > 0.001f) ? player->hVelocity : inputDir;
+    if (glm::length(activeVel) > 0.001f) {
+        player->rotY = glm::degrees(std::atan2(activeVel.x, activeVel.z));
+    }
+
+    glm::vec3 vel = player->hVelocity;
+    float nextX = player->posX + vel.x;
+    float nextZ = player->posZ + vel.z;
+    float boundary = 10.0f - (player->scaleX * 0.5f);
+
+    if (nextX > -boundary && nextX < boundary) {
+        if (!checkCollision3D(nextX, player->posY, player->posZ, player->scaleX, player->scaleY, player->scaleZ, player)) {
+            player->posX = nextX;
+        } else {
+            player->hVelocity.x = 0.0f;
         }
-        if (nextZ > -boundary && nextZ < boundary) {
-            if (!checkCollision3D(player->posX, player->posY, nextZ, player->scaleX, player->scaleY, player->scaleZ, player)) {
-                player->posZ = nextZ;
-            }
+    } else {
+        player->hVelocity.x = 0.0f;
+    }
+
+    if (nextZ > -boundary && nextZ < boundary) {
+        if (!checkCollision3D(player->posX, player->posY, nextZ, player->scaleX, player->scaleY, player->scaleZ, player)) {
+            player->posZ = nextZ;
+        } else {
+            player->hVelocity.z = 0.0f;
         }
+    } else {
+        player->hVelocity.z = 0.0f;
     }
 
     if (keyStates[' ']) player->jump();
@@ -284,8 +439,6 @@ void Engine::render() {
         renderText(windowWidth / 2.0f - 180.0f, windowHeight - 300.0f, areShadowsEnabled ? "[2] Cienie rzutowane -> AKTYWNE" : "[2] Cienie rzutowane -> WYLACZONE");
         renderText(windowWidth / 2.0f - 180.0f, windowHeight - 350.0f, isSmoothShading ? "[3] PATH TREJSING -> ON" : "[3] PATH TREJSING -> OFF");
         renderText(windowWidth / 2.0f - 180.0f, windowHeight - 400.0f, isPerspective ? "[4] Rzutowanie -> PERSPEKTYWA" : "[4] Rzutowanie -> ORTOGONALNE");
-
-        // NOWA OPCJA UI: dynamiczne wyświetlanie klatek z oznaczeniem trybu kinowego
         renderText(windowWidth / 2.0f - 180.0f, windowHeight - 450.0f, "[5] Limit FPS -> " + std::to_string(fps) + (fps == 15 ? " (Tryb Konsolowy)" : ""));
 
         glColor3f(0.8f, 0.8f, 0.8f);
@@ -304,10 +457,53 @@ void Engine::render() {
 
 void Engine::update(int value) {
     processMovement();
+
+    // Wyliczanie i aplikowanie przemieszczenia ruchomych platform oraz kolizji z lawą
+    for (auto* obj : sceneObjects) {
+        MovingPlatformObject* movPlat = dynamic_cast<MovingPlatformObject*>(obj);
+        if (movPlat != nullptr) {
+            glm::vec3 delta = movPlat->updatePosition();
+
+            float pMinX = movPlat->posX - movPlat->scaleX / 2.0f;
+            float pMaxX = movPlat->posX + movPlat->scaleX / 2.0f;
+            float pMinZ = movPlat->posZ - movPlat->scaleZ / 2.0f;
+            float pMaxZ = movPlat->posZ + movPlat->scaleZ / 2.0f;
+            float platformSurfaceY = movPlat->posY + (movPlat->scaleY / 2.0f);
+
+            if (player->posX >= pMinX && player->posX <= pMaxX &&
+                player->posZ >= pMinZ && player->posZ <= pMaxZ &&
+                std::abs(player->posY - (platformSurfaceY + player->scaleY / 2.0f)) < 0.15f) {
+                player->posX += delta.x;
+                player->posY += delta.y;
+                player->posZ += delta.z;
+            }
+        }
+
+        // --- Sprawdzanie kolizji z lawą (Reset do pozycji startowej) ---
+        LavaObject* lava = dynamic_cast<LavaObject*>(obj);
+        if (lava != nullptr && player != nullptr) {
+            float lMinX = lava->posX - lava->scaleX / 2.0f; float lMaxX = lava->posX + lava->scaleX / 2.0f;
+            float lMinY = lava->posY - lava->scaleY / 2.0f; float lMaxY = lava->posY + lava->scaleY / 2.0f;
+            float lMinZ = lava->posZ - lava->scaleZ / 2.0f; float lMaxZ = lava->posZ + lava->scaleZ / 2.0f;
+
+            float pMinX = player->posX - player->scaleX / 2.0f; float pMaxX = player->posX + player->scaleX / 2.0f;
+            float pMinY = player->posY - player->scaleY / 2.0f; float pMaxY = player->posY + player->scaleY / 2.0f;
+            float pMinZ = player->posZ - player->scaleZ / 2.0f; float pMaxZ = player->posZ + player->scaleZ / 2.0f;
+
+            if (pMaxX > lMinX && pMinX < lMaxX && pMaxY > lMinY && pMinY < lMaxY && pMaxZ > lMinZ && pMinZ < lMaxZ) {
+                // Cofnięcie gracza na start (0, 1, 0)
+                player->posX = 0.0f;
+                player->posY = 1.0f;
+                player->posZ = 0.0f;
+                player->velocityY = 0.0f;
+                player->hVelocity = glm::vec3(0.0f);
+            }
+        }
+    }
+
     if (player) player->updatePhysics(getFloorLevelAt(player->posX, player->posZ));
     glutPostRedisplay();
 
-    // Elastyczne wywołanie pętli czasowej na podstawie zmiennej fps
     glutTimerFunc(1000 / fps, timerWrapper, 0);
 }
 
@@ -327,7 +523,6 @@ void Engine::handleKeyDown(unsigned char key, int x, int y) {
             glutPostRedisplay();
             return;
         }
-        // NOWOŚĆ: Przełączanie wartości FPS (30 -> 60 -> 144 -> 15 -> powrót do 30)
         if (key == '5') {
             if (fps == 30) fps = 60;
             else if (fps == 60) fps = 144;

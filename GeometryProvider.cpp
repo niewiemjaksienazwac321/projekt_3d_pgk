@@ -129,7 +129,7 @@ void CubeObject::draw(bool isShadow) {
 
         glBegin(GL_QUADS);
             glNormal3f(0.0f, 0.0f, -1.0f);
-            if (!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+            if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
             if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f,  0.5f, -0.5f);
             if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f( 0.5f,  0.5f, -0.5f);
             if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( 0.5f, -0.5f, -0.5f);
@@ -156,14 +156,14 @@ void CubeObject::draw(bool isShadow) {
         glBegin(GL_QUADS);
             glNormal3f(1.0f, 0.0f, 0.0f);
             if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( 0.5f, -0.5f, -0.5f);
-            if (!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f( 0.5f,  0.5f, -0.5f);
+            if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( 0.5f,  0.5f, -0.5f);
             if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( 0.5f,  0.5f,  0.5f);
             if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f( 0.5f, -0.5f,  0.5f);
         glEnd();
 
         glBegin(GL_QUADS);
             glNormal3f(-1.0f, 0.0f, 0.0f);
-            if (!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+            if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
             if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, -0.5f,  0.5f);
             if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f,  0.5f,  0.5f);
             if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f,  0.5f, -0.5f);
@@ -210,21 +210,21 @@ void PyramidObject::draw(bool isShadow) {
 }
 
 SphereObject::SphereObject(float x, float y, float z) : Object3D(x, y, z) {
-    int sectors = 24; int stacks = 24; float radius = 0.5f;
+    int sectors = 128; int stacks = 128; float radius = 0.5f;
 
     for (int i = 0; i < stacks; ++i) {
         float phi1 = M_PI * (float)i / stacks;
         float phi2 = M_PI * (float)(i + 1) / stacks;
 
         for (int j = 0; j < sectors; ++j) {
-            float theta1 = 2.0f * M_PI * (float)j / sectors;
-            float theta2 = 2.0f * M_PI * (float)(j + 1) / sectors;
+            float theta1 = 2.0f * (float)M_PI * (float)j / sectors;
+            float theta2 = 2.0f * (float)M_PI * (float)(j + 1) / sectors;
 
             float p[4][3] = {
-                { radius * sin(phi1) * cos(theta1), radius * cos(phi1), radius * sin(phi1) * sin(theta1) },
-                { radius * sin(phi1) * cos(theta2), radius * cos(phi1), radius * sin(phi1) * sin(theta2) },
-                { radius * sin(phi2) * cos(theta2), radius * cos(phi2), radius * sin(phi2) * sin(theta2) },
-                { radius * sin(phi2) * cos(theta1), radius * cos(phi2), radius * sin(phi2) * sin(theta1) }
+                { static_cast<float>(radius * sin(phi1) * cos(theta1)), static_cast<float>(radius * cos(phi1)), static_cast<float>(radius * sin(phi1) * sin(theta1)) },
+                { static_cast<float>(radius * sin(phi1) * cos(theta2)), static_cast<float>(radius * cos(phi1)), static_cast<float>(radius * sin(phi1) * sin(theta2)) },
+                { static_cast<float>(radius * sin(phi2) * cos(theta2)), static_cast<float>(radius * cos(phi2)), static_cast<float>(radius * sin(phi2) * sin(theta2)) },
+                { static_cast<float>(radius * sin(phi2) * cos(theta1)), static_cast<float>(radius * cos(phi2)), static_cast<float>(radius * sin(phi2) * sin(theta1)) }
             };
 
             for (int k : {0, 1, 2, 0, 2, 3}) {
@@ -236,42 +236,64 @@ SphereObject::SphereObject(float x, float y, float z) : Object3D(x, y, z) {
     }
 }
 
-void SphereObject::draw(bool isShadow) {
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, vertices.data());
-
+void SlopePlatformObject::draw(bool isShadow) {
     if (!isShadow) {
-        GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        GLfloat mat_specular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-        glMaterialf(GL_FRONT, GL_SHININESS, 64.0f);
-        glColor3f(0.0f, 0.7f, 0.9f);
-
-        glEnableClientState(GL_NORMAL_ARRAY);
-        glNormalPointer(GL_FLOAT, 0, normals.data());
+        glMaterialf(GL_FRONT, GL_SHININESS, 32.0f);
+        glColor3f(0.5f, 0.5f, 0.6f);
     } else {
         glColor4f(0.0f, 0.0f, 0.0f, 0.6f);
     }
 
-    glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    if (!isShadow) glDisableClientState(GL_NORMAL_ARRAY);
+    glBegin(GL_TRIANGLES);
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    glVertex3f(-0.5f, 0.0f, -0.5f);
+    glVertex3f(-0.5f, 0.0f,  0.5f);
+    glVertex3f(-0.5f, 1.0f,  0.5f);
+
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(0.5f, 0.0f, -0.5f);
+    glVertex3f(0.5f, 1.0f,  0.5f);
+    glVertex3f(0.5f, 0.0f,  0.5f);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    glVertex3f(-0.5f, 0.0f, -0.5f);
+    glVertex3f( 0.5f, 0.0f, -0.5f);
+    glVertex3f( 0.5f, 0.0f,  0.5f);
+    glVertex3f(-0.5f, 0.0f,  0.5f);
+
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    glVertex3f(-0.5f, 0.0f, -0.5f);
+    glVertex3f(-0.5f, 1.0f,  0.5f);
+    glVertex3f( 0.5f, 1.0f,  0.5f);
+    glVertex3f( 0.5f, 0.0f, -0.5f);
+
+    glNormal3f(0.0f, 0.707f, -0.707f);
+    glVertex3f(-0.5f, 0.0f, -0.5f);
+    glVertex3f(-0.5f, 1.0f,  0.5f);
+    glVertex3f( 0.5f, 1.0f,  0.5f);
+    glVertex3f( 0.5f, 0.0f, -0.5f);
+    glEnd();
 }
 
 ConeObject::ConeObject(float x, float y, float z) : Object3D(x, y, z) {
     int sectors = 24; float radius = 0.5f; float height = 1.0f;
 
     for (int j = 0; j < sectors; ++j) {
-        float theta1 = 2.0f * M_PI * (float)j / sectors;
-        float theta2 = 2.0f * M_PI * (float)(j + 1) / sectors;
+        float theta1 = 2.0f * (float)M_PI * (float)j / sectors;
+        float theta2 = 2.0f * (float)M_PI * (float)(j + 1) / sectors;
 
-        vertices.insert(vertices.end(), { 0.0f, 0.0f, 0.0f, radius * cos(theta2), 0.0f, radius * sin(theta2), radius * cos(theta1), 0.0f, radius * sin(theta1) });
+        vertices.insert(vertices.end(), { 0.0f, 0.0f, 0.0f, static_cast<float>(radius * cos(theta2)), 0.0f, static_cast<float>(radius * sin(theta2)), static_cast<float>(radius * cos(theta1)), 0.0f, static_cast<float>(radius * sin(theta1)) });
         normals.insert(normals.end(), { 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f });
 
         float nx = cos((theta1 + theta2) / 2.0f); float ny = radius / height; float nz = sin((theta1 + theta2) / 2.0f);
         float len = sqrt(nx*nx + ny*ny + nz*nz);
         nx /= len; ny /= len; nz /= len;
 
-        vertices.insert(vertices.end(), { 0.0f, height, 0.0f, radius * cos(theta1), 0.0f, radius * sin(theta1), radius * cos(theta2), 0.0f, radius * sin(theta2) });
+        vertices.insert(vertices.end(), { 0.0f, height, 0.0f, static_cast<float>(radius * cos(theta1)), 0.0f, static_cast<float>(radius * sin(theta1)), static_cast<float>(radius * cos(theta2)), 0.0f, static_cast<float>(radius * sin(theta2)) });
         normals.insert(normals.end(), { nx, ny, nz, nx, ny, nz, nx, ny, nz });
     }
 }
@@ -307,6 +329,8 @@ void FloorObject::draw(bool isShadow) {
     glEnable(GL_TEXTURE_2D);
     glColor3f(1.0f, 1.0f, 1.0f);
     glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 1.0f, 0.0f);
@@ -321,6 +345,244 @@ void FloorObject::draw(bool isShadow) {
     }
     glEnd();
     glDisable(GL_TEXTURE_2D);
+}
+
+void IcePlatformObject::draw(bool isShadow) {
+    if (!isShadow) {
+        glEnable(GL_TEXTURE_2D);
+        if (textureId != 0) {
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        glColor3f(1.0f, 1.0f, 1.0f);
+    } else {
+        glColor4f(0.0f, 0.0f, 0.0f, 0.6f);
+    }
+
+    float hw = 0.5f;
+    glBegin(GL_QUADS);
+        // Przód
+        glNormal3f(0.0f, 0.0f, 1.0f);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f( hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw,  hw,  hw);
+        // Tył
+        glNormal3f(0.0f, 0.0f, -1.0f);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, -hw, -hw);
+        // Prawa
+        glNormal3f(1.0f, 0.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f( hw, -hw,  hw);
+        // Lewa
+        glNormal3f(-1.0f, 0.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw,  hw, -hw);
+        // Góra
+        glNormal3f(0.0f, 1.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f( hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw, -hw);
+        // Dół
+        glNormal3f(0.0f, -1.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f( hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, -hw,  hw);
+    glEnd();
+
+    if (!isShadow && textureId != 0) {
+        glDisable(GL_TEXTURE_2D);
+    }
+}
+
+void IceSlopeObject::draw(bool isShadow) {
+    if (!isShadow) {
+        glEnable(GL_TEXTURE_2D);
+        if (textureId != 0) {
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        glColor3f(1.0f, 1.0f, 1.0f);
+    } else {
+        glColor4f(0.0f, 0.0f, 0.0f, 0.6f);
+    }
+
+    float hw = 0.5f;
+    glBegin(GL_TRIANGLES);
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    if(!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, 0.0f, -hw);
+    if(!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f(-hw, 0.0f,  hw);
+    if(!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, 1.0f,  hw);
+
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    if(!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(hw, 0.0f, -hw);
+    if(!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(hw, 1.0f,  hw);
+    if(!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(hw, 0.0f,  hw);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    if(!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, 0.0f, -hw);
+    if(!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f( hw, 0.0f, -hw);
+    if(!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw, 0.0f,  hw);
+    if(!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw, 0.0f,  hw);
+
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    if(!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, 0.0f, -hw);
+    if(!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, 1.0f,  hw);
+    if(!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw, 1.0f,  hw);
+    if(!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, 0.0f, -hw);
+
+    glNormal3f(0.0f, 0.707f, -0.707f);
+    if(!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, 0.0f, -hw);
+    if(!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw, 1.0f,  hw);
+    if(!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw, 1.0f,  hw);
+    if(!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, 0.0f, -hw);
+    glEnd();
+
+    if (!isShadow && textureId != 0) {
+        glDisable(GL_TEXTURE_2D);
+    }
+}
+
+void HeadObject::draw(bool isShadow) {
+    if (!isShadow) {
+        glEnable(GL_TEXTURE_2D);
+        if (textureId != 0) {
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        glColor3f(1.0f, 1.0f, 1.0f);
+    } else {
+        glColor4f(0.0f, 0.0f, 0.0f, 0.6f);
+    }
+
+    glEnable(GL_TEXTURE_GEN_S);
+    glEnable(GL_TEXTURE_GEN_T);
+
+    GLfloat planeS[] = { 1.0f, 0.0f, 0.0f, 0.5f };
+    GLfloat planeT[] = { 0.0f, 1.0f, 0.0f, 0.5f };
+    glTexGenfv(GL_S, GL_OBJECT_PLANE, planeS);
+    glTexGenfv(GL_T, GL_OBJECT_PLANE, planeT);
+    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+    glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+
+    GLUquadric* quad = gluNewQuadric();
+    gluQuadricNormals(quad, GLU_SMOOTH);
+    float currentRadius = (scaleX > 0.0f) ? (scaleX / 2.0f) : 0.5f;
+    gluSphere(quad, currentRadius, 32, 32);
+    gluDeleteQuadric(quad);
+
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+
+    if (!isShadow && textureId != 0) {
+        glDisable(GL_TEXTURE_2D);
+    }
+}
+
+void LavaObject::draw(bool isShadow) {
+    if (!isShadow) {
+        GLfloat mat_emission[] = { 1.0f, 0.4f, 0.0f, 1.0f };
+        glMaterialfv(GL_FRONT, GL_EMISSION, mat_emission);
+        glEnable(GL_TEXTURE_2D);
+        if (textureId != 0) {
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        glColor3f(1.0f, 1.0f, 1.0f);
+    } else {
+        glColor4f(0.0f, 0.0f, 0.0f, 0.6f);
+    }
+
+    float hw = 0.5f;
+    glBegin(GL_QUADS);
+        // Przód
+        glNormal3f(0.0f, 0.0f, 1.0f);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f( hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw,  hw,  hw);
+        // Tył
+        glNormal3f(0.0f, 0.0f, -1.0f);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, -hw, -hw);
+        // Prawa
+        glNormal3f(1.0f, 0.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f( hw, -hw,  hw);
+        // Lewa
+        glNormal3f(-1.0f, 0.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw,  hw, -hw);
+        // Góra
+        glNormal3f(0.0f, 1.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f(-hw,  hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 0.0f); glVertex3f( hw,  hw,  hw);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f( hw,  hw, -hw);
+        // Dół
+        glNormal3f(0.0f, -1.0f, 0.0f);
+        if (!isShadow) glTexCoord2f(1.0f, 1.0f); glVertex3f(-hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 1.0f); glVertex3f( hw, -hw, -hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f( hw, -hw,  hw);
+        if (!isShadow) glTexCoord2f(0.0f, 0.0f); glVertex3f(-hw, -hw,  hw);
+    glEnd();
+
+    if (!isShadow) {
+        glDisable(GL_TEXTURE_2D);
+        GLfloat mat_emission_zero[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+        glMaterialfv(GL_FRONT, GL_EMISSION, mat_emission_zero);
+    }
+}
+
+void SphereObject::draw(bool isShadow) {
+    if (!isShadow) {
+        if (textureId != 0) {
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glColor3f(1.0f, 1.0f, 1.0f);
+        } else {
+            glDisable(GL_TEXTURE_2D); // Gwarantuje, że zwykłe sfery na scenie NIE dostaną tekstury głowy!
+            glColor3f(0.8f, 0.8f, 0.8f);
+        }
+    } else {
+        glColor4f(0.0f, 0.0f, 0.0f, 0.6f);
+    }
+
+    GLUquadric* quad = gluNewQuadric();
+    gluQuadricTexture(quad, GL_TRUE);
+    gluQuadricNormals(quad, GLU_SMOOTH);
+
+    float currentRadius = (scaleX > 0.0f) ? (scaleX / 2.0f) : 0.5f;
+    gluSphere(quad, currentRadius, 32, 32);
+
+    gluDeleteQuadric(quad);
+
+    if (!isShadow) {
+        glDisable(GL_TEXTURE_2D);
+    }
 }
 
 std::vector<Object3D*> GeometryProvider::initScene() { return std::vector<Object3D*>(); }
